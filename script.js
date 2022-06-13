@@ -18,6 +18,16 @@ window.onload = function() {
         $("#scaling-factor-label").html(parseFloat(2 / scaling_factor).toFixed(2) + "m");
     }, false);
 
+    $("#room-dimensions-add").on("click", function() {
+        let width = $("#room-width").val();
+        let height = $("#room-height").val();
+
+        if (width == undefined || width == null || width == 0 || heigh == undefined || height == null || height == 0)
+            return;
+
+        console.log(width, height);
+    });
+
     function renderFrame() {
         requestAnimationFrame(renderFrame);
 
