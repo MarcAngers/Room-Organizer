@@ -1,0 +1,15 @@
+#scaling-factor, #room-input {
+    margin-left: 13px;
+}
+#scaling-factor-bar {
+    display: inline-block;
+    width: 100px;
+    height: 5px;
+    background-color: #aaaaaa;
+}
+#scaling-factor-label {
+    margin-top: 0px;
+    margin-left: 5px;
+    font-size: 15px;
+    display: inline-block;
+}
