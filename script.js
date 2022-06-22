@@ -27,12 +27,19 @@ var Xtranslation = 400;
 var Ytranslation = 400;
 
 class Piece {
-    constructor(width, height, room) {
+    constructor(width, height, room, round) {
         this.width = width;
-        this.height = height;
+        
+        if (round) {
+            this.height = width;
+            this.x = 0;
+            this.y = 0;
+        } else {
+            this.height = height;
 
-        this.x = -0.5 * width; // In meters
-        this.y = -0.5 * height; // In meters
+            this.x = -0.5 * width; // In meters
+            this.y = -0.5 * height; // In meters
+        }
         this.rotation = 0;
 
         this.name = "";
@@ -40,6 +47,7 @@ class Piece {
         this.extensions = [];
         this.state = PieceState.Normal;
         this.isRoom = room;
+        this.isRound = round;
 
         this.Xoffset = 0; // In pixels
         this.Yoffset = 0; // In pixels
@@ -113,13 +121,23 @@ class Piece {
         context.translate(-(this.getCenter()[0] * PPM), -(this.getCenter()[1] * PPM));
 
         context.lineWidth = 3;
-        context.strokeRect(this.x * PPM, this.y * PPM, this.width * PPM, this.height * PPM);
 
-        context.fillStyle = "#444444";
-        context.fillText(this.name, this.getCenter()[0] * PPM - 3*this.name.length, this.getCenter()[1] * PPM + 9);
+        if (this.isRound) {
+            context.beginPath();
+            context.arc(this.x * PPM, this.y * PPM, (this.width * PPM) / 2, 0, 2 * Math.PI, false);
+            context.stroke();
 
-        context.fillStyle = "#eeeeee44";
-        context.fillRect(this.x * PPM + 1, this.y * PPM + 1, this.width * PPM - 3, this.height * PPM - 3);
+            context.fillStyle = "#eeeeee44";
+            context.fill();
+        } else {
+            context.strokeRect(this.x * PPM, this.y * PPM, this.width * PPM, this.height * PPM);
+    
+            context.fillStyle = "black";
+            context.fillText(this.name, this.getCenter()[0] * PPM - 3*this.name.length, this.getCenter()[1] * PPM + 9);
+    
+            context.fillStyle = "#eeeeee44";
+            context.fillRect(this.x * PPM + 1, this.y * PPM + 1, this.width * PPM - 3, this.height * PPM - 3);
+        }
 
         context.translate(this.getCenter()[0] * PPM, this.getCenter()[1] * PPM);
         context.rotate(this.rotation * (Math.PI / 180));
@@ -235,7 +253,7 @@ window.onload = function() {
         if (width == undefined || width == null || width == 0 || height == undefined || height == null || height == 0)
             return;
 
-        pieces.push(new Piece(width, height, true));
+        pieces.push(new Piece(width, height, true, false));
     });
     $("#furniture-dimensions-add").on("click", function() {
         if (state == ViewState.PreMove || state == ViewState.Moving)
@@ -244,10 +262,13 @@ window.onload = function() {
         let width = $("#furniture-width").val();
         let height = $("#furniture-height").val();
 
-        if (width == undefined || width == null || width == 0 || height == undefined || height == null || height == 0)
+        if (width == undefined || width == null || width == 0)
             return;
 
-        pieces.push(new Piece(width, height, false));
+        if (!$("#round-check").is(":checked") && (height == undefined || height == null || height == 0))
+            return;
+
+        pieces.push(new Piece(width, height, false, $("#round-check").is(":checked")));
     });
 
     $("#move").on("click", function() {
@@ -305,6 +326,16 @@ window.onload = function() {
         Ytranslation = 400;
         scaling_factor = 1;
         ctx.setTransform(scaling_factor, 0, 0, scaling_factor, Xtranslation, Ytranslation);
+    });
+
+    $("#round-check").on("change", function() {
+        if ($("#round-check").is(":checked")) {
+            $("#furniture-add-text").html("diameter");
+            $("#furniture-height").addClass("hidden");
+        } else {
+            $("#furniture-add-text").html("by");
+            $("#furniture-height").removeClass("hidden");
+        }
     });
 
     $("#piece-name-input").on("change", function() {
