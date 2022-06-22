@@ -15,26 +15,32 @@ const PieceState = {
     Rotating: "Rotating"
 }
 
+const PPM = 50; // Pixels Per Meter
+const GRID_FREQ = 10;
+const LARGE_GRID_FREQ = 100;
+const WIDTH = 8000;
+const HEIGHT = 8000;
+
 var scaling_factor = 1;
 
-var Xtranslation = 0;
-var Ytranslation = 0;
+var Xtranslation = 400;
+var Ytranslation = 400;
 
 class Piece {
     constructor(width, height, room) {
         this.width = width;
         this.height = height;
 
-        this.x = -0.5 * width;
-        this.y = -0.5 * height;
+        this.x = -0.5 * width; // In meters
+        this.y = -0.5 * height; // In meters
         this.rotation = 0;
 
         this.extensions = [];
         this.state = PieceState.Normal;
         this.isRoom = room;
 
-        this.Xoffset = 0;
-        this.Yoffset = 0;
+        this.Xoffset = 0; // In pixels
+        this.Yoffset = 0; // In pixels
         this.oldRotation = 0;
     }
 
@@ -48,14 +54,17 @@ class Piece {
             console.log("this is gonna be difficult");
     }
 
-    contains(x, y, scaling_factor) {
-        scaling_factor *= 50;
+    contains(x, y) {
+        x = (x - Xtranslation) / scaling_factor;
+        y = (y - Ytranslation) / scaling_factor;
 
-        let left = this.x * scaling_factor;
-        let top = this.y * scaling_factor;
+        let left = this.x * PPM;
+        let top = this.y * PPM;
 
-        let right = left + this.width * scaling_factor;
-        let bottom = top + this.height * scaling_factor;
+        let right = left + this.width * PPM;
+        let bottom = top + this.height * PPM;
+
+        console.log([left, top, right, bottom], [x, y]);
 
         if ((x > left && x < right) && (y > top && y < bottom))
             return true;
@@ -63,30 +72,24 @@ class Piece {
         return false;
     }
 
-    offset(x, y, scaling_factor) {
-        scaling_factor *= 50;
-
-        this.Xoffset = x - (this.x * scaling_factor);
-        this.Yoffset = y - (this.y * scaling_factor);
+    offset(x, y) {
+        this.Xoffset = x - (this.x * PPM * scaling_factor);
+        this.Yoffset = y - (this.y * PPM * scaling_factor);
     }
     offsetRotation(x) {
         this.Xoffset = x;
         this.oldRotation = this.rotation;
     }
 
-    move(newX, newY, scaling_factor) {
-        scaling_factor *= 50;
-
-        this.x = (newX - this.Xoffset) / scaling_factor;
-        this.y = (newY - this.Yoffset) / scaling_factor;
+    move(newX, newY) {
+        this.x = (newX - this.Xoffset) / (PPM * scaling_factor);
+        this.y = (newY - this.Yoffset) / (PPM * scaling_factor);
     }
     rotate(newX) {
         this.rotation = this.oldRotation + (newX - this.Xoffset) * 0.5;
     }
 
-    draw(scaling_factor, context) {
-        scaling_factor *= 50;
-
+    draw(context) {
         switch (this.state) {
             case PieceState.Normal:
                 if (this.isRoom)
@@ -103,19 +106,19 @@ class Piece {
                 break;
         }
 
-        context.translate(this.getCenter()[0] * scaling_factor, this.getCenter()[1] * scaling_factor);
+        context.translate(this.getCenter()[0] * PPM, this.getCenter()[1] * PPM);
         context.rotate(-(this.rotation) * (Math.PI / 180));
-        context.translate(-(this.getCenter()[0] * scaling_factor), -(this.getCenter()[1] * scaling_factor));
+        context.translate(-(this.getCenter()[0] * PPM), -(this.getCenter()[1] * PPM));
 
         context.lineWidth = 3;
-        context.strokeRect(this.x * scaling_factor, this.y * scaling_factor, this.width * scaling_factor, this.height * scaling_factor);
+        context.strokeRect(this.x * PPM, this.y * PPM, this.width * PPM, this.height * PPM);
 
         context.fillStyle = "#eeeeee44";
-        context.fillRect(this.x * scaling_factor + 1, this.y * scaling_factor + 1, this.width * scaling_factor - 3, this.height * scaling_factor - 3);
+        context.fillRect(this.x * PPM + 1, this.y * PPM + 1, this.width * PPM - 3, this.height * PPM - 3);
 
-        context.translate(this.getCenter()[0] * scaling_factor, this.getCenter()[1] * scaling_factor);
+        context.translate(this.getCenter()[0] * PPM, this.getCenter()[1] * PPM);
         context.rotate(this.rotation * (Math.PI / 180));
-        context.translate(-(this.getCenter()[0] * scaling_factor), -(this.getCenter()[1] * scaling_factor));
+        context.translate(-(this.getCenter()[0] * PPM), -(this.getCenter()[1] * PPM));
     }
 }
 
@@ -125,12 +128,10 @@ window.onload = function() {
     var state = ViewState.Normal;
 
     var canvas = document.getElementById("canvas");
-    var WIDTH = 10000;
-    var HEIGHT = 10000;
     var ctx = canvas.getContext("2d");
+    ctx.setTransform(scaling_factor, 0, 0, scaling_factor, Xtranslation, Ytranslation);
 
-    var grid_freq = 10;
-    var large_grid_freq = 100;
+    var Xanchor, Yanchor;
     
     window.addEventListener("wheel", function(e) {
         if (e.wheelDelta > 0) {
@@ -139,12 +140,13 @@ window.onload = function() {
             scaling_factor /= 1.025;
         }
         $("#scaling-factor-label").html(parseFloat(2 / scaling_factor).toFixed(2) + "m");
+        ctx.setTransform(scaling_factor, 0, 0, scaling_factor, Xtranslation, Ytranslation);
     }, false);
 
     $("#canvas").on("mousedown", function(e) {       
         if (state == ViewState.PreMove) {
-            if (selected.contains(e.pageX - Xtranslation, e.pageY - Ytranslation, scaling_factor)) {
-                selected.offset(e.pageX, e.pageY, scaling_factor);
+            if (selected.contains(e.pageX, e.pageY)) {
+                selected.offset(e.pageX, e.pageY);
                 state = ViewState.Moving;
             }
         }
@@ -159,22 +161,35 @@ window.onload = function() {
             var newSelected = null;
             
             for (i = 0; i < pieces.length; i++) {
-                if (pieces[i].contains(x - Xtranslation, y - Ytranslation, scaling_factor))
+                if (pieces[i].contains(x, y))
                     if (pieces[i].getArea() < smallestArea) {
                         newSelected = pieces[i];
                     }
             }
 
             if (newSelected != null) {
-                selected = newSelected;
-                selected.state = PieceState.Selected;
-                state = ViewState.Selected;
+                if (selected == null) {
+                    selected = newSelected;
+                    selected.state = PieceState.Selected;
+                    state = ViewState.Selected;
+                } else if (newSelected == selected) {
+                    Xanchor = x - Xtranslation;
+                    Yanchor = y - Ytranslation;
+                    state = ViewState.Panning;
+                } else {
+                    selected.state = PieceState.Normal;
+                    selected = newSelected;
+                    selected.state = PieceState.Selected;
+                    state = ViewState.Selected;
+                }
             } else {
                 if (selected != null) {
                     selected.state = PieceState.Normal;
                     state = ViewState.Normal;
                     selected = null;
                 } else {
+                    Xanchor = x - Xtranslation;
+                    Yanchor = y - Ytranslation;
                     state = ViewState.Panning;
                 }
             }
@@ -190,14 +205,14 @@ window.onload = function() {
     });
     $("#canvas").on("mousemove", function(e) {
         if (state == ViewState.Moving)
-            selected.move(e.pageX, e.pageY, scaling_factor);
+            selected.move(e.pageX, e.pageY);
         if (state == ViewState.Rotating)
             selected.rotate(e.pageX);
         
         if (state == ViewState.Panning) {
-            Xtranslation += (e.pageX - Xtranslation);
-            Ytranslation += (e.pageY - Ytranslation);
-            ctx.setTransform(1, 0, 0, 1, Xtranslation, Ytranslation);
+            Xtranslation = (e.pageX - Xanchor);
+            Ytranslation = (e.pageY - Yanchor);
+            ctx.setTransform(scaling_factor, 0, 0, scaling_factor, Xtranslation, Ytranslation);
         }
     });
 
@@ -212,6 +227,18 @@ window.onload = function() {
             return;
 
         pieces.push(new Piece(width, height, true));
+    });
+    $("#furniture-dimensions-add").on("click", function() {
+        if (state == ViewState.PreMove || state == ViewState.Moving)
+            return;
+        
+        let width = $("#furniture-width").val();
+        let height = $("#furniture-height").val();
+
+        if (width == undefined || width == null || width == 0 || height == undefined || height == null || height == 0)
+            return;
+
+        pieces.push(new Piece(width, height, false));
     });
 
     $("#move").on("click", function() {
@@ -261,36 +288,36 @@ window.onload = function() {
             selected = null;
         }
     });
+    $("#home").on("click", function() {
+        Xtranslation = 400;
+        Ytranslation = 400;
+        scaling_factor = 1;
+        ctx.setTransform(scaling_factor, 0, 0, scaling_factor, Xtranslation, Ytranslation);
+    });
 
     function renderFrame() {
         requestAnimationFrame(renderFrame);
 
+        ctx.fillStyle = "#aaaaaa";
+        ctx.fillRect(-WIDTH, -HEIGHT, WIDTH*2, HEIGHT*2);
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(-(WIDTH / 2), -(HEIGHT / 2), WIDTH, HEIGHT);
 
         // draw small gridlines
         ctx.fillStyle = "#dddddd";
-        for (i = 500; i < WIDTH; i += (grid_freq * scaling_factor))
+        for (i = -(WIDTH / 2); i < WIDTH; i += GRID_FREQ)
             ctx.fillRect(i, -(HEIGHT / 2), 1, HEIGHT);
-        for (i = 500; i >= -(WIDTH / 2); i -= (grid_freq * scaling_factor))
-            ctx.fillRect(i, -(HEIGHT / 2), 1, HEIGHT);
-        for (i = 500; i < HEIGHT; i += (grid_freq * scaling_factor))
+        for (i = -(HEIGHT / 2); i < HEIGHT; i += GRID_FREQ)
             ctx.fillRect(-(WIDTH / 2), i, WIDTH, 1);
-        for (i = 500; i >= -(HEIGHT / 2); i -= (grid_freq * scaling_factor))
-            ctx.fillRect(-(WIDTH / 2), i, WIDTH, 1);
-
+        
         // draw large gridlines
         ctx.fillStyle = "#aaaaaa";
-        for (i = 500; i < WIDTH; i += (large_grid_freq * scaling_factor))
+        for (i = -(WIDTH / 2); i < WIDTH; i += LARGE_GRID_FREQ)
             ctx.fillRect(i, -(HEIGHT / 2), 3, HEIGHT);
-        for (i = 500; i >= -(WIDTH / 2); i -= (large_grid_freq * scaling_factor))
-            ctx.fillRect(i, -(HEIGHT / 2), 3, HEIGHT);
-        for (i = 500; i < HEIGHT; i += (large_grid_freq * scaling_factor))
-            ctx.fillRect(-(WIDTH / 2), i, WIDTH, 3);
-        for (i = 500; i >= -(HEIGHT / 2); i -= (large_grid_freq * scaling_factor))
+        for (i = -(HEIGHT / 2); i < HEIGHT; i += LARGE_GRID_FREQ)
             ctx.fillRect(-(WIDTH / 2), i, WIDTH, 3);
 
-        pieces.forEach(piece => piece.draw(scaling_factor, ctx));
+        pieces.forEach(piece => piece.draw(ctx));
     }
 
     renderFrame();

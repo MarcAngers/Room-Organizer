@@ -1,5 +1,10 @@
-#scaling-factor, #room-input {
+#scaling-factor, #room-input, #furniture-input {
+    width: 800px;
     margin-left: 13px;
+}
+#scaling-factor {
+    margin-bottom: 9px;
+    margin-top: 3px;
 }
 #scaling-factor-bar {
     display: inline-block;
@@ -15,5 +20,9 @@
 }
 #room-input {
     display: inline-block;
-    width: 1000px;
+}
+#room-dimensions-add, #furniture-dimensions-add {
+    float: right;
+    margin: 5px;
+    margin-right: 8px;
 }

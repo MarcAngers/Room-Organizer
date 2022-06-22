@@ -7,12 +7,15 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
 
     <body>
-        <canvas id="canvas" width="1003" height="1003"></canvas>
+        <canvas id="canvas" width="803" height="803"></canvas>
         <div id="scaling-factor">
             <div id="scaling-factor-bar"></div>
             <h3 id="scaling-factor-label">2m</h3>
-            <button class="btn btn-light" id="delete" style="float: right; margin-right: 5px;">
+            <button class="btn btn-light" id="delete" style="float: right; margin-right: 8px;">
                 <span class="glyphicon glyphicon-trash"></span>
+            </button>
+            <button class="btn btn-light" id="home" style="float: right; margin-right: 5px;">
+                <span class="glyphicon glyphicon-home"></span>
             </button>
             <button class="btn btn-light" id="move" style="float: right; margin-right: 5px;">
                 <span class="glyphicon glyphicon-move" id="move-inner"></span>
@@ -22,11 +25,20 @@
             </button>
         </div>
         <div id="room-input">
-            <h3 style="margin-top: 5px; display: inline-block;">Room Dimensions: </h3>
+            <h3 style="margin-top: 5px; display: inline-block; width: 250px;">Room Dimensions: </h3>
             <input type="number" id="room-width">
             <h2 style="margin-top: 5px; font-size: 15px; display: inline-block;">by</h2>
             <input type="number" id="room-height">
-            <button class="btn btn-light" id="room-dimensions-add" style="display: inline-block;">
+            <button class="btn btn-info" id="room-dimensions-add">
+                <span class="glyphicon glyphicon-plus"></span>
+            </button>
+        </div>
+        <div id="furniture-input">
+            <h3 style="margin-top: 5px; display: inline-block; width: 250px;">Furniture Dimensions: </h3>
+            <input type="number" id="furniture-width">
+            <h2 style="margin-top: 5px; font-size: 15px; display: inline-block;">by</h2>
+            <input type="number" id="furniture-height">
+            <button class="btn btn-info" id="furniture-dimensions-add">
                 <span class="glyphicon glyphicon-plus"></span>
             </button>
         </div>
