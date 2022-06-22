@@ -35,6 +35,8 @@ class Piece {
         this.y = -0.5 * height; // In meters
         this.rotation = 0;
 
+        this.name = "";
+
         this.extensions = [];
         this.state = PieceState.Normal;
         this.isRoom = room;
@@ -113,6 +115,9 @@ class Piece {
         context.lineWidth = 3;
         context.strokeRect(this.x * PPM, this.y * PPM, this.width * PPM, this.height * PPM);
 
+        context.fillStyle = "#444444";
+        context.fillText(this.name, this.getCenter()[0] * PPM - 3*this.name.length, this.getCenter()[1] * PPM + 9);
+
         context.fillStyle = "#eeeeee44";
         context.fillRect(this.x * PPM + 1, this.y * PPM + 1, this.width * PPM - 3, this.height * PPM - 3);
 
@@ -129,6 +134,7 @@ window.onload = function() {
 
     var canvas = document.getElementById("canvas");
     var ctx = canvas.getContext("2d");
+    ctx.font = "18px Arial";
     ctx.setTransform(scaling_factor, 0, 0, scaling_factor, Xtranslation, Ytranslation);
 
     var Xanchor, Yanchor;
@@ -170,6 +176,7 @@ window.onload = function() {
             if (newSelected != null) {
                 if (selected == null) {
                     selected = newSelected;
+                    $("#piece-name-input").val(selected.name);
                     selected.state = PieceState.Selected;
                     state = ViewState.Selected;
                 } else if (newSelected == selected) {
@@ -179,6 +186,7 @@ window.onload = function() {
                 } else {
                     selected.state = PieceState.Normal;
                     selected = newSelected;
+                    $("#piece-name-input").val(selected.name);
                     selected.state = PieceState.Selected;
                     state = ViewState.Selected;
                 }
@@ -187,6 +195,7 @@ window.onload = function() {
                     selected.state = PieceState.Normal;
                     state = ViewState.Normal;
                     selected = null;
+                    $("#piece-name-input").val("");
                 } else {
                     Xanchor = x - Xtranslation;
                     Yanchor = y - Ytranslation;
@@ -249,6 +258,7 @@ window.onload = function() {
             state = ViewState.Normal;
             selected.state = PieceState.Normal;
             selected = null;
+            $("#piece-name-input").val("");
         }
 
         if (state == ViewState.Selected) {
@@ -269,6 +279,7 @@ window.onload = function() {
             state = ViewState.Normal;
             selected.state = PieceState.Normal;
             selected = null;
+            $("#piece-name-input").val("");
         }
 
         if (state == ViewState.Selected) {
@@ -286,6 +297,7 @@ window.onload = function() {
         if (state == ViewState.Selected && confirm("Are you sure you want to delete this element?")) {
             pieces.splice(pieces.indexOf(selected), 1);
             selected = null;
+            $("#piece-name-input").val("");
         }
     });
     $("#home").on("click", function() {
@@ -293,6 +305,13 @@ window.onload = function() {
         Ytranslation = 400;
         scaling_factor = 1;
         ctx.setTransform(scaling_factor, 0, 0, scaling_factor, Xtranslation, Ytranslation);
+    });
+
+    $("#piece-name-input").on("change", function() {
+        if (state != ViewState.Selected)
+            return;
+        
+        selected.name = $("#piece-name-input").val();
     });
 
     function renderFrame() {
