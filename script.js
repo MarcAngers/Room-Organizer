@@ -5,7 +5,9 @@ const ViewState = {
     PreMove: "PreMove",
     Moving: "Moving",
     PreRotate: "PreRotate",
-    Rotating: "Rotating"
+    Rotating: "Rotating",
+    PreAdjust: "PreAdjust",
+    Adjusting: "Adjusting"
 }
 
 const PieceState = {
@@ -26,10 +28,12 @@ var scaling_factor = 1;
 var Xtranslation = 400;
 var Ytranslation = 400;
 
+var savedPiece;
+
 class Piece {
-    constructor(width, height, room) {
-        this.width = width;
-        this.height = height;
+    constructor(width, height, room, round) {
+        this.width = width; // In meters
+        this.height = height; // In meters
 
         this.x = -0.5 * width; // In meters
         this.y = -0.5 * height; // In meters
@@ -38,6 +42,7 @@ class Piece {
         this.extensions = [];
         this.state = PieceState.Normal;
         this.isRoom = room;
+        this.isRound = round;
 
         this.Xoffset = 0; // In pixels
         this.Yoffset = 0; // In pixels
@@ -125,6 +130,7 @@ class Piece {
 window.onload = function() {
     var pieces = [];
     var selected = null;
+    var attachingTo = null;
     var state = ViewState.Normal;
 
     var canvas = document.getElementById("canvas");
@@ -154,6 +160,51 @@ window.onload = function() {
             selected.offsetRotation(e.pageX);
             state = ViewState.Rotating;
         }
+        if (state == ViewState.PreAdjust) {
+            let x = e.pageX;
+            let y = e.pageY;
+            let smallestArea = Number.MAX_VALUE;
+            var newSelected = null;
+            
+            for (i = 0; i < pieces.length; i++) {
+                if (!pieces[i].isRound && savedPiece.isRoom == pieces[i].isRoom && pieces[i].contains(x, y))
+                    if (pieces[i].getArea() < smallestArea) {
+                        smallestArea = pieces[i].getArea();
+                        newSelected = pieces[i];
+                    }
+            }
+
+            if (newSelected != null) {
+                attachingTo = newSelected;
+                attachingTo.state = PieceState.Moving;
+
+                state = ViewState.Adjusting;
+
+                let newX = selected.x;
+                let newY = selected.y;
+                
+                selected.offset(0, 0);
+                console.log(attachingTo);
+                // if (Math.abs(selected.x - attachingTo.getCenter()[0] * PPM) > Math.abs(selected.y - attachingTo.getCenter()[1] * PPM)) {
+                //     if (selected.x < attachingTo.x)
+                         newX = (attachingTo.x - selected.width);
+                //     else
+                //         newX = (attachingTo.x + attachingTo.width) * PPM * scaling_factor;
+                // } else {
+                //     if (selected.y < attachingTo.y)
+                //         newY = (attachingTo.y - selected.height) * PPM * scaling_factor;
+                //     else
+                //         newY = (attachingTo.y + attachingTo.height) * PPM * scaling_factor;
+                // }
+
+                console.log(newX, newY);
+                selected.move(newX, newY);
+            } else {
+                Xanchor = x - Xtranslation;
+                Yanchor = y - Ytranslation;
+                state = ViewState.Panning;
+            }
+        }
         if (state == ViewState.Normal || state == ViewState.Selected) {
             let x = e.pageX;
             let y = e.pageY;
@@ -163,6 +214,7 @@ window.onload = function() {
             for (i = 0; i < pieces.length; i++) {
                 if (pieces[i].contains(x, y))
                     if (pieces[i].getArea() < smallestArea) {
+                        smallestArea = pieces[i].getArea();
                         newSelected = pieces[i];
                     }
             }
@@ -293,6 +345,26 @@ window.onload = function() {
         Ytranslation = 400;
         scaling_factor = 1;
         ctx.setTransform(scaling_factor, 0, 0, scaling_factor, Xtranslation, Ytranslation);
+    });
+
+    $("#extend").on("click", function() {
+        if (state != ViewState.Selected && state != ViewState.PreAdjust)
+            return;
+
+        if (state == ViewState.Selected) {
+            if (selected.room || selected.round)
+                return;
+
+            $("#extend").toggleClass("btn-light");
+            $("#extend").toggleClass("btn-secondary");
+
+            savedPiece = selected;
+
+            selected.state = PieceState.Moving;
+            state = ViewState.PreAdjust;
+        }
+
+        
     });
 
     function renderFrame() {
